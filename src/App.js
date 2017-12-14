@@ -9,11 +9,70 @@ class App extends Component {
       {
         constant: true,
         inputs: [],
-        name: "getState",
-        outputs: [{ name: "", type: "string" }],
+        name: "you_awesome",
+        outputs: [
+          {
+            name: "",
+            type: "string"
+          }
+        ],
         payable: false,
         stateMutability: "view",
         type: "function"
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: "pseudoRandomResult",
+        outputs: [
+          {
+            name: "",
+            type: "bool"
+          }
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function"
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: "getState",
+        outputs: [
+          {
+            name: "",
+            type: "string"
+          }
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function"
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: "getSecret",
+        outputs: [
+          {
+            name: "",
+            type: "string"
+          }
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function"
+      },
+      {
+        anonymous: false,
+        inputs: [
+          {
+            indexed: false,
+            name: "result",
+            type: "bool"
+          }
+        ],
+        name: "ExperimentComplete",
+        type: "event"
       },
       {
         constant: false,
@@ -25,30 +84,31 @@ class App extends Component {
         type: "function"
       },
       {
-        constant: true,
-        inputs: [],
-        name: "getSecret",
-        outputs: [{ name: "", type: "string" }],
-        payable: false,
-        stateMutability: "view",
-        type: "function"
-      },
-      {
         constant: false,
-        inputs: [{ name: "newState", type: "string" }],
-        name: "setState",
-        outputs: [],
+        inputs: [],
+        name: "setExperimentInMotion",
+        outputs: [
+          {
+            name: "",
+            type: "bool"
+          }
+        ],
         payable: true,
         stateMutability: "payable",
         type: "function"
       },
       {
-        constant: true,
-        inputs: [],
-        name: "you_awesome",
-        outputs: [{ name: "", type: "string" }],
-        payable: false,
-        stateMutability: "view",
+        constant: false,
+        inputs: [
+          {
+            name: "newState",
+            type: "string"
+          }
+        ],
+        name: "setState",
+        outputs: [],
+        payable: true,
+        stateMutability: "payable",
         type: "function"
       },
       {
@@ -57,15 +117,20 @@ class App extends Component {
         stateMutability: "nonpayable",
         type: "constructor"
       },
-      { payable: true, stateMutability: "payable", type: "fallback" }
+      {
+        payable: true,
+        stateMutability: "payable",
+        type: "fallback"
+      }
     ]);
 
     this.state = {
       ContractInstance: MyContract.at(
-        "0xebaca7f979c1584311f750d134da4370080c9a55"
+        "0x9055c0bdce6c8bdefd089577ccf251bc68bf8dd5"
       ),
       contractState: ""
     };
+    this.state.event = this.state.ContractInstance.ExperimentComplete();
   }
 
   querySecret = () => {
@@ -105,7 +170,37 @@ class App extends Component {
     );
   };
 
+  queryConditionResult = () => {
+    const { pseudoRandomResult } = this.state.ContractInstance;
+
+    pseudoRandomResult((err, result) => {
+      console.log("This is the smart contract conditional::::", result);
+    });
+  };
+
+  activateExperiment = () => {
+    const { setExperimentInMotion } = this.state.ContractInstance;
+
+    setExperimentInMotion(
+      {
+        gas: 300000,
+        from: window.web3.eth.accounts[0],
+        value: window.web3.toWei(0.01, "ether")
+      },
+      (err, result) => {
+        console.log("Experiment to determine true or false set in motion.");
+      }
+    );
+  };
+
   render() {
+    console.log(this.state.event.watch);
+    this.state.event.watch((err, event) => {
+      if (err) console.error("An error occured::::", err);
+      console.log("This is the event::::", event);
+      console.log("This is the experiment result::::", event.args.result);
+    });
+
     return (
       <div className="App">
         <header className="App-header">
@@ -136,6 +231,16 @@ class App extends Component {
           />
           <button type="submit">Submit</button>
         </form>
+        <br />
+        <br />
+        <button onClick={this.queryConditionResult}>
+          Query Smart Contract Conditional Result
+        </button>
+        <br />
+        <br />
+        <button onClick={this.activateExperiment}>
+          Start Experiment on Smart Contract
+        </button>
       </div>
     );
   }
