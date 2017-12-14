@@ -7,6 +7,15 @@ class App extends Component {
     super();
     const MyContract = window.web3.eth.contract([
       {
+        constant: true,
+        inputs: [],
+        name: "getState",
+        outputs: [{ name: "", type: "string" }],
+        payable: false,
+        stateMutability: "view",
+        type: "function"
+      },
+      {
         constant: false,
         inputs: [],
         name: "kill",
@@ -22,6 +31,15 @@ class App extends Component {
         outputs: [{ name: "", type: "string" }],
         payable: false,
         stateMutability: "view",
+        type: "function"
+      },
+      {
+        constant: false,
+        inputs: [{ name: "newState", type: "string" }],
+        name: "setState",
+        outputs: [],
+        payable: true,
+        stateMutability: "payable",
         type: "function"
       },
       {
@@ -44,8 +62,9 @@ class App extends Component {
 
     this.state = {
       ContractInstance: MyContract.at(
-        "0xf35ccdd590b80c81d6864dcb870444dd8ce8c6bc"
-      )
+        "0xebaca7f979c1584311f750d134da4370080c9a55"
+      ),
+      contractState: ""
     };
   }
 
@@ -56,6 +75,34 @@ class App extends Component {
       if (err) console.error("An error occured::::", err);
       console.log("This is our contract's secret::::", secret);
     });
+  };
+
+  queryContractState = () => {
+    const { getState } = this.state.ContractInstance;
+
+    getState((err, state) => {
+      if (err) console.error("An error occured::::", err);
+      console.log("This is our conract's state::::", state);
+    });
+  };
+
+  handleContractStateSubmit = event => {
+    event.preventDefault();
+
+    const { setState } = this.state.ContractInstance;
+    const { contractState: newState } = this.state;
+
+    setState(
+      newState,
+      {
+        gas: 300000,
+        from: window.web3.eth.accounts[0],
+        value: window.web3.toWei(0.01, "ether")
+      },
+      (err, result) => {
+        console.log("Smart contract state is changing");
+      }
+    );
   };
 
   render() {
@@ -72,6 +119,23 @@ class App extends Component {
         </button>
         <br />
         <br />
+        <button onClick={this.queryContractState}>
+          Query Smart Contract's State
+        </button>
+        <br />
+        <br />
+        <form onSubmit={this.handleContractStateSubmit}>
+          <input
+            type="text"
+            name="state-change"
+            placeholder="Ender new state..."
+            value={this.state.contractState}
+            onChange={event =>
+              this.setState({ contractState: event.target.value })
+            }
+          />
+          <button type="submit">Submit</button>
+        </form>
       </div>
     );
   }
